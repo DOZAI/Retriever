@@ -1,42 +1,37 @@
+#import modules
 import asyncio
 import logging
 import os
 
 from dotenv import load_dotenv
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, Router
 from aiogram.filters.command import Command
 
-#Загружаем переменные из .env
+#Загружаем переменные из .env и читаем их через os.getenv
 load_dotenv()
-
-# 2. Читаем их через os.getenv
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 # Включаем логирование, чтобы не пропустить важные сообщения
 logging.basicConfig(level=logging.INFO)
 
-# Объект бота
+# Логика aiogram
 bot = Bot(token=BOT_TOKEN)
-# Диспетчер
 dp = Dispatcher()
 
-# Хэндлер на команду /start
-@dp.message(Command("start"))
-async def cmd_start(message: types.Message):
-    await message.answer(f"Привет {message.from_user.full_name}! Я эхо-бот. Отправь мне любое сообщение, и я его повторю.")
-# Хэндлер на остальные текстовые сообщения
-@dp.message()
-async def echo_handler(message: types.Message):
-    text = message.text
-    if text == f"My name is {message.from_user.full_name}":
-        await message.answer(f"Hello {message.from_user.full_name}")
-    elif text == "cat":
-        await message.answer("You sent 'cat'! Here's a cat for you: 🐱")
-    else:
-        await message.answer(f"Я получил твое сообщение: {text}")
+#импорт роутеров
+from Handlers.basic_handlers import text_router
+from Handlers.command_handlers import command_router
+from Handlers.media_handlers import media_router
+
+
 
 # Запуск процесса поллинга новых апдейтов
 async def main():
+    #подключаем роутер к диспетчеру
+    dp.include_router(command_router)
+    dp.include_router(text_router)
+    dp.include_router(media_router)
+
     # Удаляем вебхук и пропускаем накопившиеся входящие сообщения
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
